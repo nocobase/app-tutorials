@@ -9,6 +9,40 @@ const enUS = {
   // The application's copy goes here, one group per feature. A shared group such as `navigation` is extended by
   // spreading the system one first, `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`, since a group
   // written here replaces the system group of the same name rather than merging with it.
+  tasks: {
+    readPermission: 'View tasks',
+    updatePermission: 'Complete or reopen tasks',
+    title: 'Tasks',
+    description: 'Create tasks and keep track of what is done.',
+    new: 'New task',
+    create: 'Create',
+    cancel: 'Cancel',
+    taskTitle: 'Title',
+    status: 'Status',
+    actions: 'Actions',
+    pending: 'Pending',
+    completed: 'Completed',
+    complete: 'Complete',
+    reopen: 'Reopen',
+    emptyTitle: 'No tasks yet',
+    emptyDescription: 'Create your first task to start tracking your work.',
+    askAdmin: 'Ask an administrator for permission to create tasks.',
+    formDescription: 'Give this task a short, clear title.',
+    required: 'Enter a task title.',
+    tooLong: 'Use no more than 120 characters.',
+    created: 'Created "{{title}}".',
+    updated: 'Updated "{{title}}".',
+    loading: 'Loading',
+    retry: 'Retry',
+    signIn: 'Sign in again',
+    sessionExpired: 'Your session ended. Sign in again to continue.',
+    forbidden: 'You do not have permission. Contact an administrator.',
+    notFound: 'This task no longer exists. The list will refresh.',
+    invalidInput: 'Check the task title and try again.',
+    requestFailed: 'The request failed. Please try again.',
+    capNotice:
+      'This tutorial shows the 100 most recently updated tasks. Add pagination before using it for larger lists.',
+  },
 };
 
 /**
