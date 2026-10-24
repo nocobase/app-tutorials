@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+
+# Local configuration, including the generated secrets key.
+/config.yml
+/config.toml
+/.env
+/.env.local
+
+# Local application state.
+/storage/
+/database.sqlite
+/database.sqlite-journal
+/database.sqlite-wal
+/database.sqlite-shm
+/database/*/collections/
+/.agents/*
+!/.agents/rules/
+/.claude/skills/
+/.agent-annotations/
+*.log
+
+# Local verification output and optional environment overrides.
+.env.*
+!.env.example
+playwright-report/
+test-results/
