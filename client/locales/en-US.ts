@@ -10,6 +10,11 @@ const enUS = {
   // spreading the system one first, `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`, since a group
   // written here replaces the system group of the same name rather than merging with it.
   tasks: {
+    search: 'Search by title',
+    allStatuses: 'All statuses',
+    clearFilters: 'Clear filters',
+    noResults: 'No tasks match your filters.',
+
     assignee: 'Assignee',
     unassigned: 'Unassigned',
     assigneeUnavailable: 'User unavailable',
@@ -48,8 +53,6 @@ const enUS = {
     notFound: 'This task no longer exists. The list will refresh.',
     invalidInput: 'Check the task title and try again.',
     requestFailed: 'The request failed. Please try again.',
-    capNotice:
-      'This tutorial shows the 100 most recently updated tasks. Add pagination before using it for larger lists.',
   },
 };
 

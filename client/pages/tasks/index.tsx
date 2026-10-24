@@ -21,6 +21,16 @@ import {
 } from '#components/ui/empty';
 import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
+import { Input } from '#components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
+import { useUrlSearch } from '#hooks/use-url-search';
+import { useTableUrlState } from '#hooks/use-table-url-state';
 import { TaskError } from './error.js';
 import { taskErrorKey } from './error-key.js';
 import type { Task, TasksContext } from './types.js';
@@ -31,6 +41,18 @@ export default function TasksPage() {
   const toaster = useToaster();
   const { refresh } = useAuthentication();
   const location = useLocation();
+  const { searchParams, search, text, inputProps, updateParams, clear } =
+    useUrlSearch({ resetParams: ['page'] });
+  const statusValue = searchParams.get('status');
+  const status =
+    statusValue === 'pending' || statusValue === 'completed'
+      ? statusValue
+      : 'all';
+  const searchRef = useRef<HTMLInputElement>(null);
+  const clearFilters = () => {
+    clear((params) => params.delete('status'));
+    searchRef.current?.focus();
+  };
   const createAccess = useCan({
     resource: { type: 'composite', id: 'tutorial.tasks' },
     action: 'create',
@@ -42,10 +64,29 @@ export default function TasksPage() {
   const [result, setResult] = useState<{
     data: Task[];
     meta: { total: number };
+    key: string;
+    filtered: boolean;
   }>();
   const [error, setError] = useState<unknown>();
-  const [loading, setLoading] = useState(true);
+
   const [revision, setRevision] = useState(0);
+  const positionKey = JSON.stringify([
+    search,
+    status,
+    searchParams.get('page'),
+    searchParams.get('pageSize'),
+    revision,
+  ]);
+  const [failure, setFailure] = useState<{ key: string; cause: unknown }>();
+  const loading = result?.key !== positionKey && failure?.key !== positionKey;
+  const table = useTableUrlState({
+    sortColumns: [],
+    rowCount:
+      !loading && !error && result?.key === positionKey
+        ? result.meta.total
+        : undefined,
+  });
+  const { pageIndex, pageSize } = table.paginationState;
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -53,8 +94,8 @@ export default function TasksPage() {
   const previousPathRef = useRef(location.pathname);
   const focusHeading = () => headingRef.current?.focus();
   const reload = () => {
-    setLoading(true);
     setError(undefined);
+    setFailure(undefined);
     setRevision((value) => value + 1);
   };
 
@@ -63,19 +104,27 @@ export default function TasksPage() {
     void api
       .request<{ data: Task[]; meta: { total: number } }>({
         path: 'tutorialTasks',
+        query: { q: search, status, page: pageIndex + 1, pageSize },
         signal: controller.signal,
       })
       .then((data) => {
-        if (!controller.signal.aborted) setResult(data);
+        if (!controller.signal.aborted) {
+          setResult({
+            ...data,
+            key: positionKey,
+            filtered: Boolean(search || status !== 'all'),
+          });
+          setError(undefined);
+        }
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted) setError(cause);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setError(cause);
+          setFailure({ key: positionKey, cause });
+        }
       });
     return () => controller.abort();
-  }, [api, revision]);
+  }, [api, positionKey, search, status, pageIndex, pageSize]);
 
   useEffect(() => {
     if (
@@ -87,13 +136,26 @@ export default function TasksPage() {
   }, [location.pathname]);
 
   function saved(task: Task, created = false) {
-    setResult((old) => ({
-      data: [
-        task,
-        ...(old?.data ?? []).filter((row) => row.id !== task.id),
-      ].slice(0, 100),
-      meta: { total: (old?.meta.total ?? 0) + (created ? 1 : 0) },
-    }));
+    // Only insert into the first page when the saved row still matches its filters.
+    const matches =
+      (!search ||
+        task.title.toLocaleLowerCase().includes(search.toLocaleLowerCase())) &&
+      (status === 'all' || task.completed === (status === 'completed'));
+    if (!created) focusHeading();
+    setResult((old) =>
+      old
+        ? {
+            ...old,
+            data:
+              pageIndex === 0 && matches
+                ? [task, ...old.data.filter((row) => row.id !== task.id)].slice(
+                    0,
+                    pageSize,
+                  )
+                : old.data.filter((row) => row.id !== task.id),
+          }
+        : old,
+    );
     reload();
   }
 
@@ -128,6 +190,7 @@ export default function TasksPage() {
         setResult((old) =>
           old
             ? {
+                ...old,
                 data: old.data.filter((row) => row.id !== task.id),
                 meta: { total: Math.max(0, old.meta.total - 1) },
               }
@@ -193,7 +256,10 @@ export default function TasksPage() {
       : []),
   ];
   const newTask = createAccess.can ? (
-    <Button nativeButton={false} render={<Link to='create' />}>
+    <Button
+      nativeButton={false}
+      render={<Link to={{ pathname: 'create', search: location.search }} />}
+    >
       <Plus data-icon='inline-start' />
       {t('tasks.new')}
     </Button>
@@ -209,8 +275,47 @@ export default function TasksPage() {
           </span>
         }
         description={t('tasks.description')}
-        actions={result?.data.length ? newTask : null}
+        actions={result?.meta.total === 0 && !result.filtered ? null : newTask}
       />
+      <div className='flex flex-wrap items-center gap-2'>
+        <Input
+          ref={searchRef}
+          {...inputProps}
+          maxLength={120}
+          aria-label={t('tasks.search')}
+          placeholder={t('tasks.search')}
+          className='w-full sm:w-72'
+        />
+        <Select
+          value={status}
+          items={[
+            { value: 'all', label: t('tasks.allStatuses') },
+            { value: 'pending', label: t('tasks.pending') },
+            { value: 'completed', label: t('tasks.completed') },
+          ]}
+          onValueChange={(value) =>
+            updateParams((params) => {
+              if (value === 'all' || !value) params.delete('status');
+              else params.set('status', value);
+              params.delete('page');
+            })
+          }
+        >
+          <SelectTrigger aria-label={t('tasks.status')} className='w-40'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='all'>{t('tasks.allStatuses')}</SelectItem>
+            <SelectItem value='pending'>{t('tasks.pending')}</SelectItem>
+            <SelectItem value='completed'>{t('tasks.completed')}</SelectItem>
+          </SelectContent>
+        </Select>
+        {text || status !== 'all' ? (
+          <Button variant='ghost' onClick={clearFilters}>
+            {t('tasks.clearFilters')}
+          </Button>
+        ) : null}
+      </div>
       {createAccess.error || updateAccess.error ? (
         <TaskError
           error={createAccess.error ?? updateAccess.error}
@@ -241,7 +346,7 @@ export default function TasksPage() {
           {t('tasks.loading')}
         </div>
       ) : null}
-      {result?.data.length === 0 ? (
+      {result?.meta.total === 0 && !result.filtered && !loading && !error ? (
         <Empty className='min-h-48 border border-dashed'>
           <EmptyHeader>
             <EmptyMedia variant='icon'>
@@ -257,16 +362,26 @@ export default function TasksPage() {
           {newTask ? <EmptyContent>{newTask}</EmptyContent> : null}
         </Empty>
       ) : null}
-      {result && result.data.length > 0 ? (
+      {result && (result.meta.total > 0 || result.filtered) ? (
         <DataTable
           columns={columns}
           data={result.data}
-          pagination={false}
+          {...table}
+          manualPagination
+          manualSorting
+          rowCount={result.meta.total}
+          loading={loading || Boolean(error)}
+          showSelectedCount={false}
+          emptyMessage={
+            <div className='flex flex-col items-center gap-2'>
+              <span>{t('tasks.noResults')}</span>
+              <Button variant='ghost' onClick={clearFilters}>
+                {t('tasks.clearFilters')}
+              </Button>
+            </div>
+          }
           getRowId={(row) => row.id}
         />
-      ) : null}
-      {result && result.meta.total > 100 ? (
-        <p className='text-sm text-muted-foreground'>{t('tasks.capNotice')}</p>
       ) : null}
       <Outlet context={context} />
     </PageContainer>

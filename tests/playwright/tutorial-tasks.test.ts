@@ -180,11 +180,11 @@ test('creates, completes, reopens and preserves a task after reload', async ({
     page.getByRole('heading', { name: '任务', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: '新建任务', exact: true }).click();
-  const chineseInput = page.getByRole('textbox', {
-    name: '标题',
-    exact: false,
-  });
-  await chineseInput.focus();
+  const chineseInput = page
+    .getByRole('dialog', { name: '新建任务', exact: true })
+    .getByRole('textbox', { name: '标题', exact: false });
+  await chineseInput.click();
+  await expect(chineseInput).toBeFocused();
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Input.imeSetComposition', {
     text: 'ce shi',
@@ -199,6 +199,7 @@ test('creates, completes, reopens and preserves a task after reload', async ({
   await expect(
     page.getByRole('dialog', { name: '新建任务', exact: true }),
   ).toBeVisible();
+  await expect(chineseInput).toBeFocused();
   await cdp.send('Input.insertText', { text: '测试任务' });
   await expect(chineseInput).toHaveValue('测试任务');
   await page.screenshot({

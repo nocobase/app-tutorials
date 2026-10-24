@@ -21,7 +21,11 @@ import {
   describeRoute,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { databaseManagerToken, type RepositoryPolicy } from '@nocobase/db';
+import {
+  databaseManagerToken,
+  type RepositoryFilter,
+  type RepositoryPolicy,
+} from '@nocobase/db';
 
 const taskSchema = z.object({
   id: z.string(),
@@ -36,6 +40,12 @@ const createInput = z.strictObject({
   assigneeId: z.string().min(1).max(255).nullable().optional(),
 });
 const updateInput = z.strictObject({ completed: z.boolean() });
+const listInput = z.object({
+  q: z.string().trim().max(120).default(''),
+  status: z.enum(['all', 'pending', 'completed']).default('all'),
+  page: z.coerce.number().int().min(1).max(1_000_000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
 const params = z.object({ id: z.uuid() });
 type TaskEnv = {
   Variables: AuthorizationEnv['Variables'] & { taskPolicy: RepositoryPolicy };
@@ -129,15 +139,30 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
         operationId: 'listTutorialTasks',
         responses: { '200': listResponse(taskSchema), ...apiErrorResponses },
       }),
+      apiValidator('query', listInput),
       async (c) => {
         const repository = database
           .repository('tutorialTasks')
           .withPolicy(c.get('taskPolicy'));
+        const { q, status, page, pageSize } = c.req.valid('query');
+        const filter: RepositoryFilter<Record<string, unknown>> = (f) =>
+          f.and([
+            ...(q ? [f.string('title').includes(q)] : []),
+            ...(status !== 'all'
+              ? [
+                  status === 'completed'
+                    ? f.boolean('completed').isTrue()
+                    : f.boolean('completed').isFalse(),
+                ]
+              : []),
+          ]);
         const data = await repository.findMany({
-          limit: 100,
+          filter,
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
           sort: (s) => [s.field('updatedAt').desc(), s.field('id').desc()],
         });
-        const total = await repository.count();
+        const total = await repository.count({ filter });
         return c.json({ data: await withAssigneeNames(data), meta: { total } });
       },
     );

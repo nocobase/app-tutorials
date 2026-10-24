@@ -203,7 +203,7 @@ test('declares all task endpoints in the API document', async ({ testApp }) => {
     expect(operations).toContain(id);
 });
 
-test('bounds the list and reports the full count', async ({ testApp }) => {
+test('bounds each page and reports the full count', async ({ testApp }) => {
   const database = testApp.application.container.resolve(databaseManagerToken);
   const tasks = database.repository('tutorialTasks');
   const before = await tasks.count();
@@ -224,6 +224,6 @@ test('bounds the list and reports the full count', async ({ testApp }) => {
     data: unknown[];
     meta: { total: number };
   };
-  expect(body.data).toHaveLength(100);
+  expect(body.data).toHaveLength(10);
   expect(body.meta.total).toBe(Number(before) + 101);
 });

@@ -5,6 +5,11 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   tasks: {
+    search: '按标题搜索',
+    allStatuses: '全部状态',
+    clearFilters: '清除筛选',
+    noResults: '没有符合筛选条件的任务。',
+
     assignee: '负责人',
     unassigned: '未分配',
     assigneeUnavailable: '用户不可用',
@@ -42,8 +47,6 @@ const zhCN: AppResource = {
     notFound: '任务已不存在，列表将刷新。',
     invalidInput: '请检查任务标题后重试。',
     requestFailed: '请求失败，请重试。',
-    capNotice:
-      '本教程展示最近更新的 100 个任务。用于更大的列表前，请添加分页。',
   },
 };
 
