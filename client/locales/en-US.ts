@@ -10,6 +10,12 @@ const enUS = {
   // spreading the system one first, `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`, since a group
   // written here replaces the system group of the same name rather than merging with it.
   tasks: {
+    dueDate: 'Due date',
+    noDueDate: 'No due date',
+    dueDateHelp: 'Optional. Choose a calendar date, without a time.',
+    dueDateInvalid: 'Choose a valid date.',
+    clearDueDate: 'Clear date',
+
     search: 'Search by title',
     allStatuses: 'All statuses',
     clearFilters: 'Clear filters',

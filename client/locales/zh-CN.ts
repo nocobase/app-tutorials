@@ -5,6 +5,12 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   tasks: {
+    dueDate: '截止日期',
+    noDueDate: '未设置',
+    dueDateHelp: '可选，仅记录日期，不包含时间。',
+    dueDateInvalid: '请选择有效日期。',
+    clearDueDate: '清除日期',
+
     search: '按标题搜索',
     allStatuses: '全部状态',
     clearFilters: '清除筛选',

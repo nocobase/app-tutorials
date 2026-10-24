@@ -27,3 +27,41 @@ trustLockfile: true
 # dependency from stopping the install with a red error before anything is even running.
 # See https://pnpm.io/settings/build#strictdepbuilds.
 strictDepBuilds: false
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/moonshotai@3.0.77'
+  - '@asamuzakjp/dom-selector@10.0.5'
+  - '@babel/helper-string-parser@7.29.11'
+  - '@babel/parser@7.29.11'
+  - '@babel/runtime@8.0.8'
+  - '@babel/types@7.29.11'
+  - '@eslint-react/ast@5.28.8'
+  - '@eslint-react/core@5.28.8'
+  - '@eslint-react/eslint-plugin@5.28.8'
+  - '@eslint-react/eslint@5.28.8'
+  - '@eslint-react/jsx@5.28.8'
+  - '@eslint-react/shared@5.28.8'
+  - '@eslint-react/var@5.28.8'
+  - '@modelcontextprotocol/sdk@1.32.2'
+  - '@nocobase/app-client@4.0.0-beta.3'
+  - '@nocobase/app-plugin-agents@1.0.0-beta.23'
+  - '@nocobase/app-plugin-foundation@0.1.0-beta.4'
+  - '@nocobase/app-plugin-knowledge@0.1.0-beta.11'
+  - '@nocobase/app-plugin-mail@1.0.0-beta.17'
+  - '@nocobase/app-plugin-scheduler@1.0.0-beta.20'
+  - '@nocobase/app-skills@0.1.0-beta.48'
+  - '@nocobase/dev-config@0.1.0-beta.25'
+  - '@nocobase/document-extractor@0.1.0-beta.0'
+  - '@nocobase/jobs@0.1.0-beta.4'
+  - '@tokenizer/inflate@0.5.2'
+  - baseline-browser-mapping@2.11.32
+  - electron-to-chromium@1.5.464
+  - eslint-plugin-react-dom@5.28.8
+  - eslint-plugin-react-jsx@5.28.8
+  - eslint-plugin-react-naming-convention@5.28.8
+  - eslint-plugin-react-rsc@5.28.8
+  - eslint-plugin-react-web-api@5.28.8
+  - eslint-plugin-react-x@5.28.8
+  - i18next@26.5.10
+  - prosemirror-view@1.42.8
+  - set-cookie-parser@2.7.3

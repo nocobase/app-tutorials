@@ -226,6 +226,16 @@ export default function TasksPage() {
         ),
     },
     {
+      accessorKey: 'dueDate',
+      header: t('tasks.dueDate'),
+      cell: ({ row }) =>
+        row.original.dueDate ? (
+          <time dateTime={row.original.dueDate}>{row.original.dueDate}</time>
+        ) : (
+          t('tasks.noDueDate')
+        ),
+    },
+    {
       accessorKey: 'completed',
       header: t('tasks.status'),
       cell: ({ row }) => (

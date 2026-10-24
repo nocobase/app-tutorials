@@ -10,7 +10,7 @@ import {
 const taskData = defineDatabasePermission((p) =>
   p
     .collection('tutorialTasks')
-    .read(['id', 'title', 'completed', 'updatedAt', 'assigneeId']),
+    .read(['id', 'title', 'completed', 'updatedAt', 'assigneeId', 'dueDate']),
 );
 
 export const taskPermissions = defineCompositeResource('tutorial.tasks', (r) =>
@@ -32,6 +32,7 @@ export const taskPermissions = defineCompositeResource('tutorial.tasks', (r) =>
             'completed',
             'updatedAt',
             'assigneeId',
+            'dueDate',
           ]),
         ),
     )

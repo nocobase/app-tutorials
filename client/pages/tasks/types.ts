@@ -5,6 +5,7 @@ export interface Task {
   updatedAt: string;
   assigneeId: string | null;
   assigneeName: string | null;
+  dueDate: string | null;
 }
 
 export interface TasksContext {

@@ -34,10 +34,12 @@ const taskSchema = z.object({
   updatedAt: z.string(),
   assigneeId: z.string().nullable(),
   assigneeName: z.string().nullable(),
+  dueDate: z.iso.date().nullable(),
 });
 const createInput = z.strictObject({
   title: z.string().trim().min(1).max(120),
   assigneeId: z.string().min(1).max(255).nullable().optional(),
+  dueDate: z.iso.date().nullable().optional(),
 });
 const updateInput = z.strictObject({ completed: z.boolean() });
 const listInput = z.object({
@@ -178,7 +180,11 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       }),
       apiValidator('json', createInput),
       async (c) => {
-        const { title, assigneeId = null } = c.req.valid('json');
+        const {
+          title,
+          assigneeId = null,
+          dueDate = null,
+        } = c.req.valid('json');
         if (assigneeId !== null) {
           const assignee = await users.get(assigneeId);
           if (!assignee || assignee.disabledAt || assignee.kind !== 'person') {
@@ -205,6 +211,7 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
               id: randomUUID(),
               title,
               assigneeId,
+              dueDate,
               completed: false,
               updatedAt: new Date(),
             },

@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
+import { format } from 'date-fns';
+import { enUS, zhCN } from 'react-day-picker/locale';
+import { DatePicker } from '#components/date-picker';
+import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Button } from '#components/ui/button';
@@ -53,6 +56,8 @@ export default function CreateTaskPage() {
 
 function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
   const { t } = useTranslation();
+  const { locale } = useLocale();
+  const dateLocale = locale === 'zh-CN' ? zhCN : enUS;
   const api = useApiClient();
   const toaster = useToaster();
   const { close } = useRouteOverlay();
@@ -80,8 +85,8 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
       });
     return () => controller.abort();
   }, [api, assigneeRevision]);
-  const form = useForm<{ title: string; assigneeId: string | null }>({
-    resolver: zodResolver(
+  const schema = useMemo(
+    () =>
       z.object({
         title: z
           .string()
@@ -89,17 +94,31 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           .min(1, t('tasks.required'))
           .max(120, t('tasks.tooLong')),
         assigneeId: z.string().nullable(),
+        dueDate: z.date().optional(),
       }),
-    ),
-    defaultValues: { title: '', assigneeId: null },
+    [t],
+  );
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: '',
+      assigneeId: null as string | null,
+      dueDate: undefined as Date | undefined,
+    },
   });
 
   useEffect(() => {
-    if (form.formState.errors.assigneeId && !form.formState.isSubmitting)
-      form.setFocus('assigneeId');
-  }, [form, form.formState.errors.assigneeId, form.formState.isSubmitting]);
+    if (form.formState.isSubmitting) return;
+    if (form.formState.errors.assigneeId) form.setFocus('assigneeId');
+    else if (form.formState.errors.dueDate) form.setFocus('dueDate');
+  }, [
+    form,
+    form.formState.errors.assigneeId,
+    form.formState.errors.dueDate,
+    form.formState.isSubmitting,
+  ]);
 
-  async function submit(values: { title: string; assigneeId: string | null }) {
+  async function submit(values: z.infer<typeof schema>) {
     if (composingRef.current) return;
     submitting(true);
     setError(undefined);
@@ -107,7 +126,10 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
       const response = await api.request<{ data: Task }>({
         path: 'tutorialTasks',
         method: 'POST',
-        json: values,
+        json: {
+          ...values,
+          dueDate: values.dueDate ? format(values.dueDate, 'yyyy-MM-dd') : null,
+        },
       });
       saved(response.data, true);
       toaster.show({
@@ -122,11 +144,16 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           ? fieldErrorPayload.safeParse(cause.payload)
           : undefined;
       const violation = parsed?.success
-        ? parsed.data.error.fieldViolations.find(
-            (item) => item.field === 'title' || item.field === 'assigneeId',
+        ? parsed.data.error.fieldViolations.find((item) =>
+            ['title', 'assigneeId', 'dueDate'].includes(item.field),
           )
         : undefined;
-      if (violation?.field === 'assigneeId') {
+      if (violation?.field === 'dueDate') {
+        form.setError('dueDate', {
+          type: 'server',
+          message: t('tasks.dueDateInvalid'),
+        });
+      } else if (violation?.field === 'assigneeId') {
         form.setError('assigneeId', {
           type: 'server',
           message: t('tasks.assigneeInvalid'),
@@ -272,6 +299,48 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           <p className='text-sm text-muted-foreground'>
             {t('tasks.assigneeCap')}
           </p>
+        ) : null}
+      </Field>
+      <Field data-invalid={!!form.formState.errors.dueDate}>
+        <FieldLabel htmlFor='tutorial-task-due-date'>
+          {t('tasks.dueDate')}
+        </FieldLabel>
+        <Controller
+          control={form.control}
+          name='dueDate'
+          render={({ field }) => (
+            <DatePicker
+              id='tutorial-task-due-date'
+              ref={field.ref}
+              onBlur={field.onBlur}
+              value={field.value}
+              onChange={(date) => {
+                field.onChange(date);
+                form.clearErrors('dueDate');
+              }}
+              locale={dateLocale}
+              placeholder={t('tasks.noDueDate')}
+              clearLabel={t('tasks.clearDueDate')}
+              disabled={form.formState.isSubmitting}
+              aria-invalid={!!form.formState.errors.dueDate}
+              aria-describedby={
+                form.formState.errors.dueDate
+                  ? 'tutorial-task-due-date-error'
+                  : 'tutorial-task-due-date-help'
+              }
+            />
+          )}
+        />
+        <p
+          id='tutorial-task-due-date-help'
+          className='text-sm text-muted-foreground'
+        >
+          {t('tasks.dueDateHelp')}
+        </p>
+        {form.formState.errors.dueDate ? (
+          <FieldError id='tutorial-task-due-date-error'>
+            {form.formState.errors.dueDate.message}
+          </FieldError>
         ) : null}
       </Field>
     </form>
