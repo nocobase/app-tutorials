@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { z } from 'zod';
-import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
+import {
+  userAdministrationServiceToken,
+  authenticationToken,
+} from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationToken,
   type AuthorizationEnv,
@@ -25,9 +28,12 @@ const taskSchema = z.object({
   title: z.string(),
   completed: z.boolean(),
   updatedAt: z.string(),
+  assigneeId: z.string().nullable(),
+  assigneeName: z.string().nullable(),
 });
 const createInput = z.strictObject({
   title: z.string().trim().min(1).max(120),
+  assigneeId: z.string().min(1).max(255).nullable().optional(),
 });
 const updateInput = z.strictObject({ completed: z.boolean() });
 const params = z.object({ id: z.uuid() });
@@ -42,6 +48,29 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     const auth = app.container.resolve(authenticationToken);
     const authz = app.container.resolve(authorizationToken);
     const database = app.container.resolve(databaseManagerToken);
+    const users = app.container.resolve(userAdministrationServiceToken);
+    // Identity lookups use the authentication service, not its private tables.
+    // A single batch resolves display names for the entire task list.
+    async function withAssigneeNames(records: Record<string, unknown>[]) {
+      const ids = [
+        ...new Set(
+          records.flatMap((record) =>
+            typeof record.assigneeId === 'string' ? [record.assigneeId] : [],
+          ),
+        ),
+      ];
+      const page = ids.length
+        ? await users.list({ userIds: ids, pageSize: ids.length })
+        : undefined;
+      const names = new Map(page?.items.map((user) => [user.id, user.name]));
+      return records.map((record) => ({
+        ...record,
+        assigneeName:
+          typeof record.assigneeId === 'string'
+            ? (names.get(record.assigneeId) ?? null)
+            : null,
+      }));
+    }
     tasks.use('*', auth.required(), authz.middleware());
 
     const permit =
@@ -65,6 +94,33 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       };
 
     tasks.get(
+      '/assignees',
+      permit('create'),
+      describeRoute({
+        tags: ['Tutorial tasks'],
+        summary: 'List eligible task assignees',
+        operationId: 'listTutorialTaskAssignees',
+        responses: {
+          '200': listResponse(z.object({ id: z.string(), name: z.string() })),
+          ...apiErrorResponses,
+        },
+      }),
+      async (c) => {
+        const page = await users.list({
+          status: 'enabled',
+          page: 1,
+          pageSize: 100,
+          sort: 'name',
+          order: 'asc',
+        });
+        return c.json({
+          data: page.items.map(({ id, name }) => ({ id, name })),
+          meta: { total: page.total },
+        });
+      },
+    );
+
+    tasks.get(
       '/',
       permit('read'),
       describeRoute({
@@ -82,7 +138,7 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
           sort: (s) => [s.field('updatedAt').desc(), s.field('id').desc()],
         });
         const total = await repository.count();
-        return c.json({ data, meta: { total } });
+        return c.json({ data: await withAssigneeNames(data), meta: { total } });
       },
     );
 
@@ -97,7 +153,25 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       }),
       apiValidator('json', createInput),
       async (c) => {
-        const { title } = c.req.valid('json');
+        const { title, assigneeId = null } = c.req.valid('json');
+        if (assigneeId !== null) {
+          const assignee = await users.get(assigneeId);
+          if (!assignee || assignee.disabledAt || assignee.kind !== 'person') {
+            throw new ApiError({
+              status: 'INVALID_ARGUMENT',
+              reason: 'TASK_ASSIGNEE_INVALID',
+              domain: 'tutorialTasks',
+              message: 'Choose an enabled person as the assignee.',
+              fieldViolations: [
+                {
+                  field: 'assigneeId',
+                  reason: 'TASK_ASSIGNEE_INVALID',
+                  description: 'The assignee is unavailable.',
+                },
+              ],
+            });
+          }
+        }
         const data = await database
           .repository('tutorialTasks')
           .withPolicy(c.get('taskPolicy'))
@@ -105,11 +179,15 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
             values: {
               id: randomUUID(),
               title,
+              assigneeId,
               completed: false,
               updatedAt: new Date(),
             },
           });
-        return c.json({ data: data.record }, 201);
+        return c.json(
+          { data: (await withAssigneeNames([data.record]))[0] },
+          201,
+        );
       },
     );
 
@@ -136,7 +214,7 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
             filter: { id: c.req.valid('param').id },
             values: { ...c.req.valid('json'), updatedAt: new Date() },
           });
-        return c.json({ data: data.record });
+        return c.json({ data: (await withAssigneeNames([data.record]))[0] });
       },
     );
 

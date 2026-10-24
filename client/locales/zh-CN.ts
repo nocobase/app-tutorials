@@ -5,6 +5,13 @@ const zhCN: AppResource = {
   // The template's own copy; see `./en-US.ts`.
   ...systemZhCN,
   tasks: {
+    assignee: '负责人',
+    unassigned: '未分配',
+    assigneeUnavailable: '用户不可用',
+    assigneeInvalid: '该用户已不可用，请选择其他用户或设为未分配。',
+    assigneeHelp: '选择一个启用的用户，也可以暂不分配。',
+    assigneeCap: '本例只列出前 100 个启用的用户。',
+
     readPermission: '查看任务',
     updatePermission: '完成或恢复任务',
     title: '任务',

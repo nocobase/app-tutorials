@@ -8,7 +8,9 @@ import {
 } from '@nocobase/app-plugin-authorization/server';
 
 const taskData = defineDatabasePermission((p) =>
-  p.collection('tutorialTasks').read(['id', 'title', 'completed', 'updatedAt']),
+  p
+    .collection('tutorialTasks')
+    .read(['id', 'title', 'completed', 'updatedAt', 'assigneeId']),
 );
 
 export const taskPermissions = defineCompositeResource('tutorial.tasks', (r) =>
@@ -24,7 +26,13 @@ export const taskPermissions = defineCompositeResource('tutorial.tasks', (r) =>
         .title({ key: 'tasks.new', ns: metadata.name })
         .grant(
           'tasks',
-          taskData.create(['id', 'title', 'completed', 'updatedAt']),
+          taskData.create([
+            'id',
+            'title',
+            'completed',
+            'updatedAt',
+            'assigneeId',
+          ]),
         ),
     )
     .action('update', (a) =>

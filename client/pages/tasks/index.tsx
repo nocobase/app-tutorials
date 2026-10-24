@@ -151,6 +151,18 @@ export default function TasksPage() {
       cell: ({ row }) => <TaskTitle title={row.original.title} />,
     },
     {
+      accessorKey: 'assigneeName',
+      header: t('tasks.assignee'),
+      cell: ({ row }) =>
+        row.original.assigneeId ? (
+          <TaskTitle
+            title={row.original.assigneeName ?? t('tasks.assigneeUnavailable')}
+          />
+        ) : (
+          t('tasks.unassigned')
+        ),
+    },
+    {
       accessorKey: 'completed',
       header: t('tasks.status'),
       cell: ({ row }) => (

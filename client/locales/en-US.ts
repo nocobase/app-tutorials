@@ -10,6 +10,14 @@ const enUS = {
   // spreading the system one first, `navigation: { ...systemEnUS.navigation, orders: 'Orders' }`, since a group
   // written here replaces the system group of the same name rather than merging with it.
   tasks: {
+    assignee: 'Assignee',
+    unassigned: 'Unassigned',
+    assigneeUnavailable: 'User unavailable',
+    assigneeInvalid:
+      'This user is unavailable. Choose another user or leave the task unassigned.',
+    assigneeHelp: 'Choose an enabled user, or leave the task unassigned.',
+    assigneeCap: 'Only the first 100 enabled users are listed in this example.',
+
     readPermission: 'View tasks',
     updatePermission: 'Complete or reopen tasks',
     title: 'Tasks',

@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
@@ -10,6 +10,13 @@ import { useRouteOverlay } from '#components/use-route-overlay';
 import { Button } from '#components/ui/button';
 import { Field, FieldLabel, FieldError } from '#components/ui/field';
 import { Input } from '#components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#components/ui/select';
 import { Spinner } from '#components/ui/spinner';
 import { TaskError } from './error.js';
 import type { Task, TasksContext } from './types.js';
@@ -52,7 +59,28 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
   const { saved } = useOutletContext<TasksContext>();
   const [error, setError] = useState<unknown>();
   const composingRef = useRef(false);
-  const form = useForm<{ title: string }>({
+  const [assignees, setAssignees] = useState<{
+    data: { id: string; name: string }[];
+    meta: { total: number };
+  }>();
+  const [assigneeError, setAssigneeError] = useState<unknown>();
+  const [assigneeRevision, setAssigneeRevision] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    void api
+      .request<{
+        data: { id: string; name: string }[];
+        meta: { total: number };
+      }>({ path: 'tutorialTasks/assignees', signal: controller.signal })
+      .then((value) => {
+        if (!controller.signal.aborted) setAssignees(value);
+      })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted) setAssigneeError(cause);
+      });
+    return () => controller.abort();
+  }, [api, assigneeRevision]);
+  const form = useForm<{ title: string; assigneeId: string | null }>({
     resolver: zodResolver(
       z.object({
         title: z
@@ -60,12 +88,18 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           .trim()
           .min(1, t('tasks.required'))
           .max(120, t('tasks.tooLong')),
+        assigneeId: z.string().nullable(),
       }),
     ),
-    defaultValues: { title: '' },
+    defaultValues: { title: '', assigneeId: null },
   });
 
-  async function submit(values: { title: string }) {
+  useEffect(() => {
+    if (form.formState.errors.assigneeId && !form.formState.isSubmitting)
+      form.setFocus('assigneeId');
+  }, [form, form.formState.errors.assigneeId, form.formState.isSubmitting]);
+
+  async function submit(values: { title: string; assigneeId: string | null }) {
     if (composingRef.current) return;
     submitting(true);
     setError(undefined);
@@ -89,10 +123,15 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           : undefined;
       const violation = parsed?.success
         ? parsed.data.error.fieldViolations.find(
-            (item) => item.field === 'title',
+            (item) => item.field === 'title' || item.field === 'assigneeId',
           )
         : undefined;
-      if (violation) {
+      if (violation?.field === 'assigneeId') {
+        form.setError('assigneeId', {
+          type: 'server',
+          message: t('tasks.assigneeInvalid'),
+        });
+      } else if (violation) {
         const key =
           violation.reason === 'too_small'
             ? 'tasks.required'
@@ -156,6 +195,83 @@ function TaskForm({ submitting }: { submitting: (value: boolean) => void }) {
           <FieldError id='tutorial-task-title-error'>
             {form.formState.errors.title.message}
           </FieldError>
+        ) : null}
+      </Field>
+      <Field data-invalid={!!form.formState.errors.assigneeId}>
+        <FieldLabel htmlFor='tutorial-task-assignee'>
+          {t('tasks.assignee')}
+        </FieldLabel>
+        <Controller
+          control={form.control}
+          name='assigneeId'
+          render={({ field }) => (
+            <Select
+              value={field.value ?? ''}
+              onValueChange={(value) => {
+                field.onChange(value || null);
+                form.clearErrors('assigneeId');
+              }}
+              disabled={form.formState.isSubmitting}
+            >
+              <SelectTrigger
+                id='tutorial-task-assignee'
+                ref={field.ref}
+                onBlur={field.onBlur}
+                className='w-full'
+                aria-invalid={!!form.formState.errors.assigneeId}
+                aria-describedby={
+                  form.formState.errors.assigneeId
+                    ? 'tutorial-task-assignee-error'
+                    : 'tutorial-task-assignee-help'
+                }
+              >
+                <SelectValue>
+                  {field.value
+                    ? (assignees?.data.find((user) => user.id === field.value)
+                        ?.name ?? t('tasks.assigneeUnavailable'))
+                    : t('tasks.unassigned')}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value=''>{t('tasks.unassigned')}</SelectItem>
+                {assignees?.data.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <p
+          id='tutorial-task-assignee-help'
+          className='text-sm text-muted-foreground'
+        >
+          {t('tasks.assigneeHelp')}
+        </p>
+        {form.formState.errors.assigneeId ? (
+          <FieldError id='tutorial-task-assignee-error'>
+            {form.formState.errors.assigneeId.message}
+          </FieldError>
+        ) : null}
+        {!assignees && !assigneeError ? (
+          <p role='status' className='text-sm text-muted-foreground'>
+            {t('tasks.loading')}
+          </p>
+        ) : null}
+        {assigneeError ? (
+          <TaskError
+            error={assigneeError}
+            retry={() => {
+              setAssigneeError(undefined);
+              setAssigneeRevision((value) => value + 1);
+            }}
+          />
+        ) : null}
+        {assignees && assignees.meta.total > 100 ? (
+          <p className='text-sm text-muted-foreground'>
+            {t('tasks.assigneeCap')}
+          </p>
         ) : null}
       </Field>
     </form>
