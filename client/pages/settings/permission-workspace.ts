@@ -34,7 +34,14 @@ export interface PermissionWorkspaceSelection {
 
 /** Add only business operations and configuration controls this application exposes. */
 export const permissionWorkspaceSelection: PermissionWorkspaceSelection = {
-  business: [],
+  business: [
+    {
+      type: 'composite',
+      id: 'tasks',
+      actions: ['read', 'create', 'edit', 'progress', 'delete'],
+      hiddenActionScopes: { create: ['tasks'] },
+    },
+  ],
   settings: [
     {
       id: 'authorization.permission-sets',

@@ -77,6 +77,7 @@ export function useSettingsLeave(
   dirty: boolean,
   busy: boolean,
   onDiscard?: () => void,
+  copy?: { title: string; description: string; confirmLabel: string },
 ) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -120,14 +121,18 @@ export function useSettingsLeave(
   };
   return {
     guard,
+    reset: () => {
+      allowedRef.current = false;
+    },
     allow: () => {
       allowedRef.current = true;
     },
     dialog: (
       <ConfirmAction
         open={open}
-        title={t('settings.discardTitle')}
-        description={t('settings.discardHint')}
+        title={copy?.title ?? t('settings.discardTitle')}
+        description={copy?.description ?? t('settings.discardHint')}
+        confirmLabel={copy?.confirmLabel}
         busy={false}
         onCancel={() => decide(false)}
         onConfirm={() => decide(true)}

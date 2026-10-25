@@ -1,10 +1,43 @@
-import { Home } from 'lucide-react';
+import systemSettingsRoutes from './pages/settings/routes.js';
+import { Home, ListTodo } from 'lucide-react';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  {
+    name: 'tasks',
+    path: '/tasks',
+    auth: 'required',
+    authz: { resource: { type: 'page', id: 'tasks' }, action: 'access' },
+    navigation: { title: 'tasks.title', icon: ListTodo, order: 10 },
+    componentLoader: () => import('./pages/tasks/index.js'),
+    children: [
+      {
+        name: 'taskCreate',
+        path: 'new',
+        componentLoader: () => import('./pages/tasks/form.js'),
+      },
+      {
+        name: 'taskEdit',
+        path: 'edit/:taskId',
+        componentLoader: () => import('./pages/tasks/form.js'),
+      },
+      {
+        name: 'taskDetail',
+        path: ':taskId',
+        componentLoader: () => import('./pages/tasks/detail.js'),
+        children: [
+          {
+            name: 'taskDetailEdit',
+            path: 'edit',
+            componentLoader: () => import('./pages/tasks/form.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     // Every signed-in user reaches the landing page. `authz: 'skip'` takes it out of page authorization entirely, so
     // no permission change can leave a user signed in with nowhere to land.
@@ -64,6 +97,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [appRoutes];
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  systemSettingsRoutes,
+];
 
 export default routes;
