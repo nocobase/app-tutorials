@@ -1,9 +1,11 @@
+import { activityLogToken } from '@nocobase/app-plugin-tutorial-activity-log/server';
 import { randomUUID } from 'node:crypto';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import {
   userAdministrationServiceToken,
   authenticationToken,
+  type AuthEnv,
 } from '@nocobase/app-plugin-authentication/server';
 import {
   authorizationToken,
@@ -50,7 +52,8 @@ const listInput = z.object({
 });
 const params = z.object({ id: z.uuid() });
 type TaskEnv = {
-  Variables: AuthorizationEnv['Variables'] & { taskPolicy: RepositoryPolicy };
+  Variables: AuthorizationEnv['Variables'] &
+    AuthEnv['Variables'] & { taskPolicy: RepositoryPolicy };
 };
 
 const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
@@ -61,6 +64,7 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     const authz = app.container.resolve(authorizationToken);
     const database = app.container.resolve(databaseManagerToken);
     const users = app.container.resolve(userAdministrationServiceToken);
+    const activityLog = app.container.resolve(activityLogToken);
     // Identity lookups use the authentication service, not its private tables.
     // A single batch resolves display names for the entire task list.
     async function withAssigneeNames(records: Record<string, unknown>[]) {
@@ -203,19 +207,32 @@ const taskRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
             });
           }
         }
-        const data = await database
-          .repository('tutorialTasks')
-          .withPolicy(c.get('taskPolicy'))
-          .createOne({
-            values: {
-              id: randomUUID(),
-              title,
-              assigneeId,
-              dueDate,
-              completed: false,
-              updatedAt: new Date(),
+        const taskId = randomUUID();
+        const data = await database.transaction(async (connection) => {
+          const data = await connection
+            .repository('tutorialTasks')
+            .withPolicy(c.get('taskPolicy'))
+            .createOne({
+              values: {
+                id: taskId,
+                title,
+                assigneeId,
+                dueDate,
+                completed: false,
+                updatedAt: new Date(),
+              },
+            });
+          await activityLog.record(
+            {
+              actorId: c.get('auth')!.user.id,
+              action: 'task.created',
+              subject: `task:${taskId}`,
+              summary: `Created task: ${title}`,
             },
-          });
+            connection,
+          );
+          return data;
+        });
         return c.json(
           { data: (await withAssigneeNames([data.record]))[0] },
           201,

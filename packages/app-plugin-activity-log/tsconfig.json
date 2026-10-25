@@ -1,0 +1,22 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/server-library.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "rootDir": ".",
+    "outDir": "dist",
+    "types": ["node", "@testing-library/jest-dom"],
+    "isolatedDeclarations": false
+  },
+  "include": [
+    "client",
+    "server",
+    "shared",
+    "database",
+    "cli",
+    "tests",
+    "vitest.config.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

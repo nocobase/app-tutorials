@@ -1,4 +1,8 @@
 import {
+  defineActivityLogConfig,
+  type ActivityLogConfig,
+} from '@nocobase/app-plugin-tutorial-activity-log/config';
+import {
   defaultAppConfigs,
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
@@ -24,6 +28,7 @@ import snowflake from './snowflake.js';
 import users from './users.js';
 
 const defaultConfigs: AppConfigFactory<{
+  activityLog: ActivityLogConfig;
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
   notification: ReturnType<typeof notification>;
@@ -45,6 +50,7 @@ const defaultConfigs: AppConfigFactory<{
   snowflake: ReturnType<typeof snowflake>;
   users: ReturnType<typeof users>;
 }> = defaultAppConfigs({
+  activityLog: defineActivityLogConfig(),
   auth,
   authorization,
   notification,

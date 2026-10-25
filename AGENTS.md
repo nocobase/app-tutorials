@@ -118,6 +118,8 @@ When the built-in mechanism genuinely cannot express what is being asked, changi
 
 ## Index
 
+For the reusable plugin tutorial under `packages/`, also read [.agents/rules/plugin-tutorial.md](.agents/rules/plugin-tutorial.md).
+
 | Read                                                                   | When                                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |

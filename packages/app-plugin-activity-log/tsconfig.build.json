@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "isolatedDeclarations": true
+  },
+  "include": ["client", "server", "shared", "database", "cli"],
+  "exclude": ["dist", "node_modules", "tests"]
+}
