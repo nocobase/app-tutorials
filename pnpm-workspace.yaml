@@ -1,0 +1,62 @@
+# Which dependencies may run install scripts: true compiles a native addon, false skips a script
+# the project does not need. A package left out here stops the install with ERR_PNPM_IGNORED_BUILDS.
+# pnpm 11 reads this from pnpm-workspace.yaml only; see https://pnpm.io/settings/build.
+allowBuilds:
+  better-sqlite3: false
+  esbuild: true
+  oracledb: true
+  tesseract.js: false
+  '@mongodb-js/zstd': false
+  node-liblzma: false
+
+# Use msgpackr without its optional native accelerator or platform binary packages.
+ignoredOptionalDependencies: [ msgpackr-extract ]
+
+# Install dependencies explicitly instead of during dev/build/start.
+# create-app installs them initially; run pnpm install after changing dependencies.
+verifyDepsBeforeRun: false
+
+# Skips re-auditing lockfile entries against the supply-chain policy on every install.
+# The check costs tens of seconds here and re-verifies versions the lockfile already pins;
+# newly resolved packages are still checked. Set to false if outside contributors edit the
+# lockfile. See https://pnpm.io/settings/dependency-resolution#trustlockfile.
+trustLockfile: true
+
+# Reports a dependency whose install script was skipped as a warning instead of failing the
+# install. allowBuilds above decides the packages known today; this keeps a new transitive
+# dependency from stopping the install with a red error before anything is even running.
+# See https://pnpm.io/settings/build#strictdepbuilds.
+strictDepBuilds: false
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/alibaba@2.0.76'
+  - '@ai-sdk/anthropic@4.0.88'
+  - '@ai-sdk/cohere@4.0.69'
+  - '@ai-sdk/deepseek@3.0.73'
+  - '@ai-sdk/google@4.0.105'
+  - '@ai-sdk/moonshotai@3.0.78'
+  - '@ai-sdk/openai-compatible@3.0.78'
+  - '@ai-sdk/openai@4.0.102'
+  - '@ai-sdk/provider-utils@5.0.68'
+  - '@ai-sdk/provider@4.0.34'
+  - '@asamuzakjp/css-color@7.1.9'
+  - '@better-auth/utils@0.5.1'
+  - '@better-fetch/fetch@1.3.3'
+  - '@nocobase/agent-protocol@0.1.0-beta.15'
+  - '@nocobase/app-cli-client@0.1.0-beta.16'
+  - '@nocobase/app-client@4.0.0-beta.3'
+  - '@nocobase/app-plugin-agents@1.0.0-beta.24'
+  - '@nocobase/app-plugin-foundation@0.1.0-beta.5'
+  - '@nocobase/app-plugin-mail@1.0.0-beta.17'
+  - '@nocobase/app-plugin-scheduler@1.0.0-beta.20'
+  - '@nocobase/app-skills@0.1.0-beta.48'
+  - '@nocobase/dev-config@0.1.0-beta.25'
+  - '@nocobase/jobs@0.1.0-beta.4'
+  - '@tokenizer/inflate@0.5.2'
+  - fast-copy@4.3.0
+  - i18next@26.5.10
+  - ip-address@10.7.5
+  - mdast-util-find-and-replace@3.0.4
+  - react-resizable-panels@4.15.0
+  - unist-util-visit-parents@6.1.0
+  - unist-util-visit@5.2.0
