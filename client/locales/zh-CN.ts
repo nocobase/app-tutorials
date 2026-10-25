@@ -57,6 +57,8 @@ const zhCN: AppResource = {
     noRead: '你没有查看任务列表的权限，请联系管理员。',
     conflict: '任务已被其他人修改，请加载最新内容后再保存。',
     progressConflict: '任务“{{title}}”已变化，请检查当前状态后重新选择。',
+    conflictReloadFailed:
+      '任务“{{title}}”已变化，但最新状态加载失败。请刷新页面后再选择状态。',
     progressFailed: '任务“{{title}}”更新失败，请重试。',
     actionMenu: '{{title}}的操作',
     changeProgress: '更新状态',

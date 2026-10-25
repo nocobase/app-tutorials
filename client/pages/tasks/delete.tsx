@@ -57,11 +57,16 @@ export function DeleteTask({
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
         setError(cause);
-        if (cause instanceof ApiClientError && cause.status === 404)
+        if (cause instanceof ApiClientError && cause.status === 404) {
+          toaster.show({
+            type: 'info',
+            title: t('tasks.missingToast', { title: task.title }),
+          });
           missingRef.current(task.id);
+        }
       });
     return () => controller.abort();
-  }, [api, task.id, revision]);
+  }, [api, task.id, task.title, revision, toaster, t]);
   async function remove() {
     if (pendingRef.current || !latest || gone) return;
     pendingRef.current = true;
@@ -82,8 +87,13 @@ export function DeleteTask({
       close();
     } catch (cause) {
       setError(cause);
-      if (cause instanceof ApiClientError && cause.status === 404)
+      if (cause instanceof ApiClientError && cause.status === 404) {
+        toaster.show({
+          type: 'info',
+          title: t('tasks.missingToast', { title: task.title }),
+        });
         missing(task.id);
+      }
     } finally {
       pendingRef.current = false;
       setPending(false);

@@ -83,23 +83,44 @@ export function TaskActions({
           title: t('tasks.missingToast', { title: task.title }),
         });
       } else if (error instanceof ApiClientError && error.status === 409) {
-        let refreshed = false;
         try {
           const { data } = await api.request<{ data: Task }>({
             path: `tasks/${task.id}/status`,
           });
-          context.saved(data);
-          refreshed = true;
-        } catch {
-          context.reload();
+          context.received(data);
+          toaster.show({
+            type: 'error',
+            title: t('tasks.progressConflict', { title: task.title }),
+          });
+        } catch (recoveryError) {
+          if (
+            recoveryError instanceof ApiClientError &&
+            recoveryError.status === 404
+          ) {
+            toaster.show({
+              type: 'info',
+              title: t('tasks.missingToast', { title: task.title }),
+            });
+            context.missing(task.id);
+          } else if (
+            recoveryError instanceof ApiClientError &&
+            recoveryError.status === 401
+          ) {
+            toaster.show({ type: 'error', title: t('status.sessionExpired') });
+            void refresh();
+          } else {
+            toaster.show({
+              type: 'error',
+              title: t(
+                recoveryError instanceof ApiClientError &&
+                  recoveryError.status === 403
+                  ? 'tasks.denied'
+                  : 'tasks.conflictReloadFailed',
+                { title: task.title },
+              ),
+            });
+          }
         }
-        toaster.show({
-          type: 'error',
-          title: t(
-            refreshed ? 'tasks.progressConflict' : 'tasks.progressFailed',
-            { title: task.title },
-          ),
-        });
       } else if (error instanceof ApiClientError && error.status === 401) {
         toaster.show({ type: 'error', title: t('status.sessionExpired') });
         void refresh();

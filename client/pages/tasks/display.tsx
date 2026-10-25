@@ -65,12 +65,10 @@ export function TruncatedText({
       {children ?? text}
     </span>
   );
-  return overflow ? (
-    <Tooltip>
+  return (
+    <Tooltip disabled={!overflow}>
       <TooltipTrigger render={content} />
       <TooltipContent>{text}</TooltipContent>
     </Tooltip>
-  ) : (
-    content
   );
 }

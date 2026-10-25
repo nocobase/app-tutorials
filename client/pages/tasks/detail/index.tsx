@@ -53,6 +53,10 @@ function TaskDetail({ id }: { id: string }) {
   const context = useMemo<TasksContext>(
     () => ({
       ...parent,
+      received: (task) => {
+        setResult({ task });
+        parent.received(task);
+      },
       saved: (task) => {
         setResult({ task });
         parent.saved(task);

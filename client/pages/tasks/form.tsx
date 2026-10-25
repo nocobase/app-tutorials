@@ -9,6 +9,7 @@ import {
   useToaster,
   useNavigationGuard,
 } from '@nocobase/app-client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
@@ -43,7 +44,7 @@ export default function TaskFormPage() {
   const { taskId } = useParams();
   const pendingRef = useRef(false);
   const [busy, setBusy] = useState(false);
-  const [ready, setReady] = useState(!taskId);
+  const [ready, setReady] = useState(false);
   useNavigationGuard(() => !pendingRef.current);
   const submitting = (value: boolean) => {
     pendingRef.current = value;
@@ -99,6 +100,13 @@ function FormLoader({
   const { taskId } = useParams();
   const api = useApiClient();
   const { missing } = useOutletContext<TasksContext>();
+  const create = useCan({
+    resource: { type: 'composite', id: 'tasks' },
+    action: 'create',
+  });
+  useEffect(() => {
+    if (!taskId) setReady(create.can);
+  }, [taskId, create.can, setReady]);
   const missingRef = useRef(missing);
   useEffect(() => {
     missingRef.current = missing;
@@ -134,6 +142,12 @@ function FormLoader({
       );
     return () => controller.abort();
   }, [api, taskId, revision, setReady]);
+  if (!taskId && !create.can)
+    return create.isPending ? (
+      <Skeleton className='h-10 w-full' />
+    ) : (
+      <TaskError error={undefined} message={t('tasks.denied')} />
+    );
   if (taskId && !result?.task)
     return result?.error ? (
       <TaskError

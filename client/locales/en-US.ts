@@ -67,6 +67,8 @@ const enUS = {
       'This task changed while you were editing. Reload the latest version before saving again.',
     progressConflict:
       'Task "{{title}}" changed. Review its current status and choose again.',
+    conflictReloadFailed:
+      'Task "{{title}}" changed, but its latest status could not be loaded. Reload the page before choosing a status again.',
     progressFailed: 'Could not update task "{{title}}". Please retry.',
     actionMenu: 'Actions for {{title}}',
     changeProgress: 'Change status',

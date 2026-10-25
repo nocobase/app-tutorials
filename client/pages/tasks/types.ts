@@ -13,6 +13,7 @@ export interface Task {
   permissions: { edit: boolean; progress: boolean; delete: boolean };
 }
 export interface TasksContext {
+  received: (task: Task) => void;
   saved: (task: Task, created?: boolean) => void;
   missing: (id: string) => void;
   reload: () => void;

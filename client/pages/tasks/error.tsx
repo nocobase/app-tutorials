@@ -19,14 +19,16 @@ export function TaskError({
   return (
     <Alert variant='destructive'>
       <AlertDescription>
-        {message ??
-          t(
-            status === 403
-              ? 'tasks.denied'
-              : status === 409
-                ? 'tasks.conflict'
-                : 'tasks.loadFailed',
-          )}
+        {status === 403
+          ? t('tasks.denied')
+          : (message ??
+            t(
+              status === 403
+                ? 'tasks.denied'
+                : status === 409
+                  ? 'tasks.conflict'
+                  : 'tasks.loadFailed',
+            ))}
         {retry && (!status || status >= 500 || status === 409) ? (
           <Button type='button' variant='outline' onClick={retry}>
             {t(status === 409 ? 'tasks.reload' : 'tasks.retry')}

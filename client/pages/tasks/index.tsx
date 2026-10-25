@@ -135,8 +135,40 @@ export default function TasksPage() {
   const focusList = useCallback(() => {
     requestAnimationFrame(() => searchRef.current?.focus());
   }, []);
-  const context = useMemo<TasksContext>(
-    () => ({
+  const context = useMemo<TasksContext>(() => {
+    const update = (task: Task, created = false, written = false) => {
+      if (!read.can) return;
+      setResult((previous) => {
+        const matches =
+          created ||
+          ((!search ||
+            task.title
+              .toLocaleLowerCase()
+              .includes(search.toLocaleLowerCase())) &&
+            (status === 'all' || task.status === status) &&
+            (assignee === 'all' || task.assigneeId === userId));
+        const old = previous?.rows ?? [];
+        const rows = old.filter((row) => row.id !== task.id);
+        const inserted = matches ? [task, ...rows] : rows;
+        if (!created)
+          inserted.sort((a, b) => {
+            const comparison =
+              (a[sort] ?? '').localeCompare(b[sort] ?? '') ||
+              a.id.localeCompare(b.id);
+            return order === 'asc' ? comparison : -comparison;
+          });
+        return {
+          ...previous,
+          key: queryKey,
+          rows: inserted.slice(0, pageSize),
+          total: (previous?.total ?? 0) + (created ? 1 : 0),
+          written,
+          error: undefined,
+        };
+      });
+      reload();
+    };
+    return {
       reload,
       focusList,
       missing: (id) => {
@@ -156,54 +188,23 @@ export default function TasksPage() {
         reload();
         setTimeout(focusList, 100);
       },
-      saved: (task, created) => {
-        if (!read.can) return;
-        setResult((previous) => {
-          const matches =
-            created ||
-            ((!search ||
-              task.title
-                .toLocaleLowerCase()
-                .includes(search.toLocaleLowerCase())) &&
-              (status === 'all' || task.status === status) &&
-              (assignee === 'all' || task.assigneeId === userId));
-          const old = previous?.rows ?? [];
-          const rows = old.filter((row) => row.id !== task.id);
-          const inserted = matches ? [task, ...rows] : rows;
-          if (!created)
-            inserted.sort((a, b) => {
-              const comparison =
-                (a[sort] ?? '').localeCompare(b[sort] ?? '') ||
-                a.id.localeCompare(b.id);
-              return order === 'asc' ? comparison : -comparison;
-            });
-          return {
-            ...previous,
-            key: queryKey,
-            rows: inserted.slice(0, pageSize),
-            total: (previous?.total ?? 0) + (created ? 1 : 0),
-            written: true,
-            error: undefined,
-          };
-        });
-        reload();
-      },
-    }),
-    [
-      reload,
-      focusList,
-      setResult,
-      read.can,
-      search,
-      status,
-      assignee,
-      userId,
-      sort,
-      order,
-      queryKey,
-      pageSize,
-    ],
-  );
+      saved: (task, created) => update(task, created, true),
+      received: (task) => update(task),
+    };
+  }, [
+    reload,
+    focusList,
+    setResult,
+    read.can,
+    search,
+    status,
+    assignee,
+    userId,
+    sort,
+    order,
+    queryKey,
+    pageSize,
+  ]);
   const newButton = (
     <Button
       nativeButton={false}
