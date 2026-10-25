@@ -339,10 +339,9 @@ describe('app server', () => {
             new Hono().get('/test-runtime', (c) => c.json({ ok: true })),
           ),
         ],
-        serviceProviders: [
-          ...appRuntime.serviceProviders,
-          TestRuntimeApplicationProvider,
-        ],
+        // This composition fixture replaces plugins and routes, so its provider
+        // list must also be self-contained. Task providers use the real app in tasks.test.ts.
+        serviceProviders: [TestRuntimeApplicationProvider],
       },
       scope,
     );
